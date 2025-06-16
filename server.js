@@ -1,7 +1,7 @@
 const http = require('http');
 const https = require('https');
 
-const FIREBASE_URL = "https://sound-data-xxxxx-default-rtdb.firebaseio.com/data.json"; // remplace xxxxx
+const FIREBASE_URL = "https://sound-data-22c8d-default-rtdb.firebaseio.com/data.json"; // remplace xxxxx
 
 const server = http.createServer((req, res) => {
   if (req.method === 'POST' && req.url === '/proxy') {

@@ -1,32 +1,56 @@
-// server.js
-const express = require('express');
-const fetch = require('node-fetch');
+const http = require('http');
+const https = require('https');
 
-const app = express();
-app.use(express.json());
+// 🔧 Configure ici ton URL Firebase
+const FIREBASE_URL = "https://sound-data-22c8d-default-rtdb.firebaseio.com/data.json"; // ⚠️ Remplace xxxxx
 
-app.post('/proxy', async (req, res) => {
-  const data = req.body;
+const server = http.createServer((req, res) => {
+  if (req.method === 'POST' && req.url === '/proxy') {
+    let body = "";
 
-  // ✅ Met ici l'URL complète vers ta Firebase Realtime DB
-  const firebaseUrl = 'https://sound-data-22c8d-default-rtdb.firebaseio.com/data.json';
+    req.on('data', chunk => body += chunk);
 
-  try {
-    const response = await fetch(firebaseUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
+    req.on('end', () => {
+      console.log("📩 Données reçues :", body);
+
+      // ✅ Envoi vers Firebase
+      const data = JSON.stringify(JSON.parse(body)); // Assure que c’est un JSON propre
+
+      const options = {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Content-Length': data.length
+        }
+      };
+
+      const fbReq = https.request(FIREBASE_URL, options, fbRes => {
+        let responseBody = "";
+        fbRes.on('data', chunk => responseBody += chunk);
+        fbRes.on('end', () => {
+          console.log("✅ Données envoyées à Firebase :", responseBody);
+        });
+      });
+
+      fbReq.on('error', error => {
+        console.error("❌ Erreur Firebase :", error.message);
+      });
+
+      fbReq.write(data);
+      fbReq.end();
+
+      // Réponse au SIM7000E
+      res.writeHead(200, { 'Content-Type': 'text/plain' });
+      res.end("OK");
     });
-
-    const result = await response.json();
-    res.json({ success: true, firebase: result });
-  } catch (err) {
-    console.error('Erreur vers Firebase :', err);
-    res.status(500).json({ success: false, error: err.message });
+  } else {
+    // Redirige toute autre requête
+    res.writeHead(301, { Location: '/' });
+    res.end();
   }
 });
 
-const port = process.env.PORT || 3000;
-app.listen(port, () => {
-  console.log(`🌐 Proxy actif sur le port ${port}`);
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+  console.log("🚀 Serveur Railway + Firebase actif sur le port", PORT);
 });

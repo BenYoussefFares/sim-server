@@ -15,6 +15,6 @@ const server = http.createServer((req, res) => {
   }
 });
 
-server.listen(1880, () => {
-  console.log("🚀 Serveur HTTP en écoute sur le port 1880");
+server.listen(process.env.PORT || 3000, () => {
+  console.log(`🚀 Serveur HTTP en écoute sur le port ${process.env.PORT || 3000}`);
 });

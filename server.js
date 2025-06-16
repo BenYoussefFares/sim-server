@@ -1,20 +1,32 @@
-const http = require('http');
+// server.js
+const express = require('express');
+const fetch = require('node-fetch');
 
-const server = http.createServer((req, res) => {
-  if (req.method === 'POST' && req.url === '/') {
-    let body = "";
-    req.on('data', chunk => (body += chunk));
-    req.on('end', () => {
-      console.log("📩 Données reçues :", body);
-      res.writeHead(200, { 'Content-Type': 'text/plain' });
-      res.end("OK\n");
+const app = express();
+app.use(express.json());
+
+app.post('/proxy', async (req, res) => {
+  const data = req.body;
+
+  // ✅ Met ici l'URL complète vers ta Firebase Realtime DB
+  const firebaseUrl = 'https://sound-data-22c8d-default-rtdb.firebaseio.com/data.json';
+
+  try {
+    const response = await fetch(firebaseUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
     });
-  } else {
-    res.writeHead(400);
-    res.end("Bad Request");
+
+    const result = await response.json();
+    res.json({ success: true, firebase: result });
+  } catch (err) {
+    console.error('Erreur vers Firebase :', err);
+    res.status(500).json({ success: false, error: err.message });
   }
 });
 
-server.listen(process.env.PORT || 3000, () => {
-  console.log(`🚀 Serveur HTTP en écoute sur le port ${process.env.PORT || 3000}`);
+const port = process.env.PORT || 3000;
+app.listen(port, () => {
+  console.log(`🌐 Proxy actif sur le port ${port}`);
 });
